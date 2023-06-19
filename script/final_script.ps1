@@ -73,76 +73,92 @@ function Get-SpotifyUserAccessToken {
     }
 
     $response = Invoke-WebRequest -Uri $tokenEndpoint -Method Post -Headers $headers -Body $body -ContentType "application/x-www-form-urlencoded"
-	$accessToken = (ConvertFrom-Json $response.Content).access_token
     # Grabbing the whole response
     $accessToken2 = (ConvertFrom-Json $response.Content)
-    # Calculate current time
-    $time_now = Get-Date 
-    $expiring_time = $time_now.AddHours(1)
-    Write-Host "Expiring at: $expiring_time"
-    $accessToken2 | add-member Noteproperty "expiring_time"       $expiring_time
-    Write-Host "Dict?: $accessToken2"
-    $accessToken2 | ConvertTo-Json | Out-File "current_token.txt"
-    # - Grabbing these additional things (time to expiration, refresh token)
-    $accessTokenExpiredtime = (ConvertFrom-Json $response.Content).expires_in
-    $refreshToken = (ConvertFrom-Json $response.Content).refresh_token
-	# Write-Host "Token from request: $accessToken"
-    # Write-Host "Expires at: $accessTokenExpiredtime"
-    # Write-Host "Refresh Token: $refreshToken"
-
-    return $accessToken, $refreshToken, $accessTokenExpiredtime
-}
-
-function write_token($accessToken, $refreshToken, $accessTokenExpiredtime){
-    Out-File -FilePath .\token.txt InputObject $accessToken
-
-}
-
-function Invoke-SpotifyPlayback($action) {
-    # Add some logic here to allow for not using the same token
-
-
-    $accessToken, $refreshToken, $accessTokenExpiredtime = Get-SpotifyUserAccessToken
+    # Get current timem use to calculate expiring time
     $time_now = Get-Date 
     $ts = New-TimeSpan -Minutes 60
     $expiring_time = $time_now + $ts
-    Write-Host "Time: $time_now"
-    Write-Host "Expiring at: $expiring_time"
-    $currentoken = Get-Content 'current_token.txt' | Out-String | ConvertFrom-Json
-    $expiringtime2 = $currentoken.expiring_time
+    # Add expiring time to token hash table
+    $accessToken2 | add-member Noteproperty "expiring_time"       $expiring_time
 
-    Write-Host "Current token: $currentoken"
-    Write-Host "v2: $expiringtime2"
+    # Write to file 
+    $accessToken2 | ConvertTo-Json | Out-File "current_token.txt"
+    Write-Host "Succesfully wrote new token to file: current_token.txt."
+    return $accessToken2
+}
+
+function Get-Refresh-Token($current_token){ 
+    # Grab the refresh token 
+    $refresh_token =$current_token.refresh_token
+    $authHeader = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $clientID, $clientSecret)))
+    $headers = @{
+        "Authorization" = "Basic $authHeader"
+    }
+    $body = @{
+        "grant_type" = "refresh_token"
+        "refresh_token" = $refresh_token
+    }
+
+    $response = Invoke-WebRequest -Uri $tokenEndpoint -Method Post -Headers $headers -Body $body -ContentType "application/x-www-form-urlencoded"
+    $new_token = (ConvertFrom-Json $response.Content)
+    $time_now = Get-Date 
+    $expiring_time = $time_now.AddHours(1)
+    # Add expiring time to token hash table
+    $new_token | add-member Noteproperty "expiring_time"       $expiring_time
+    $new_token | ConvertTo-Json | Out-File "current_token.txt"
+
+    return $new_token
+}
+
+
+function Playlist-Controller($action){ 
+    # Get the current time, convert to utc
+    $time_now = Get-Date 
+    $time_now_utc  = ([DateTime]$time_now).ToUniversalTime()
+    # Get the currently saved token
+    $current_token = Get-Content 'current_token.txt' | Out-String | ConvertFrom-Json
+    $token_expired_time = $current_token.expiring_time
+    # Determine ig 
+    if (($time_now_utc) -gt ($token_expired_time))
+    {
+        Write-Host "Refreshing Token"
+        $current_token = Get-Refresh-Token($current_token)
+    }
+    $access_token = $current_token.access_token
+    Write-Host "Access token: $access_token"
+    Write-Host "Time Now: $time_now_utc"
+    $token_expired_time = $current_token.expiring_time
+    Write-Host "Expiring time: $token_expired_time"
 
     $headers = @{
-        "Authorization" = "Bearer $accessToken"
+        "Authorization" = "Bearer $access_token"
     }
 
     switch ($action) {
         "play" {
+            Invoke-WebRequest -Uri "$playerEndpoint/play?device_id=$deviceID" -Method Put -Headers $headers
+        }
+        "pause" {
+            Invoke-WebRequest -Uri "$playerEndpoint/pause?device_id=$deviceID" -Method Put -Headers $headers
+        }
+        "restart" {
             $body = @{
                 "context_uri" = $playlistURI
             } | ConvertTo-Json
             Invoke-WebRequest -Uri "$playerEndpoint/play?device_id=$deviceID" -Method Put -Headers $headers -Body $body -ContentType "application/json"
         }
-        "pause" {
-            Invoke-WebRequest -Uri "$playerEndpoint/pause?device_id=$deviceID" -Method Put -Headers $headers
+        "initialize_token"{
+            Get-SpotifyUserAccessToken
+
         }
+
         default{
-            throw "No valid command passed, try play, pause, or start"
+            throw "No valid command passed, try 'play', 'pause',  'restart', or 'initialize_token'."
         }
     }
+
 }
 
-function CheckToken($access_token){
-    
-}
-
-
-Invoke-SpotifyPlayback -action $action
-
-
-# Start 1; Get token, 
-
-
+Playlist-Controller -action $action
 
