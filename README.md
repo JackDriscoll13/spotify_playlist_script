@@ -1,5 +1,5 @@
 ### Description:
-A Powershell script using the spotify api to control a spotify playlist. Written in powershell to integreate seamlessly within a windows automation system. 
+A Powershell script using the spotify api to control a spotify playlist for a small business. Written in powershell to integreate seamlessly within a windows automation system. 
 
 ### Configuration Guide: 
 
