@@ -1,3 +1,7 @@
+my_script.ps1
+token.txt
+current_token.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
