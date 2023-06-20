@@ -1,6 +1,4 @@
-my_script.ps1
-token.txt
-current_token.txt
+script/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
