@@ -12,7 +12,8 @@ while ($true) {
 
     # If it's weekday and time to play
     if (($currentDayOfWeek -ne "Saturday" -and $currentDayOfWeek -ne "Sunday") -and $currentTime -eq $timeToPlay) {
-        & "C:\scripts\spotify\playlist_controller.ps1" -action play
+        # need to put tghis is the drive
+        & "playlist_controller.ps1" -action play
         # Sleep for a minute to avoid triggering the action multiple times in the same minute
         Start-Sleep -Seconds 60
     }
