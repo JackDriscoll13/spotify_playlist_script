@@ -2,11 +2,11 @@ param($action)
 
 # Replace with your own clientID, clientSecret, and redirectUri
 Write-Host "Reading client credentials..."
-$clientID = "your_client_id"
+$clientID = "03f1459766fe45b587f8d1514a5f6f9f"
 Write-Host "Client ID: $clientID"
-$clientSecret = "your_client_secret"
+$clientSecret = "e465a9a39c36477197b1cf8db8f0bf10"
 Write-Host "Client Secret: $clientSecret"
-$redirectUri = "your_redirect_url"
+$redirectUri = "http://localhost:7777/callback"
 
 Add-Type -AssemblyName System.Web
 [System.Web.HttpUtility]::UrlEncode("www.spotify.com")
@@ -17,8 +17,8 @@ $tokenEndpoint = "https://accounts.spotify.com/api/token"
 $playerEndpoint = "https://api.spotify.com/v1/me/player"
 
 # Device and playlist information -> putting in my own device id, playlist id
-$deviceID = "your_device_id"
-$playlistID = "your_playlist_id"
+$deviceID = "63b37c0ed2f874c97ed5eed8b5793129aace40c5"
+$playlistID = "5WC6YVPLHb8JRgW1UE4rAt"
 $playlistURI = "spotify:playlist:$playlistID"
 
 function Get-SpotifyUserAccessToken {
